@@ -1,469 +1,721 @@
+
+"use strict";
+
 const $ = id => document.getElementById(id);
 
-const KEYS = {
-  tickets: "devtrack-tickets-v2",
-  settings: "devtrack-settings-v2",
-  session: "devtrack-demo-session"
-};
+const STORAGE_KEY = "devtrack_tickets_v3";
+const PROFILE_KEY = "devtrack_profile_v3";
+const PREF_KEY = "devtrack_preferences_v3";
+const AUTH_KEY = "devtrack_demo_auth_v3";
 
-const DEMO_EMAIL = "demo@devtrack.com";
-const DEMO_PASSWORD = "DevTrack123!";
+function daysAgo(n) {
+  const date = new Date();
+  date.setDate(date.getDate() - n);
+  return date.toISOString();
+}
 
-const starterTickets = [
-  {
-    id: 1001,
-    title: "Login page validation error",
-    category: "Software",
-    priority: "High",
-    status: "Open",
-    description: "Investigate the login form validation issue.",
-    created: "2026-10-05"
-  },
-  {
-    id: 1002,
-    title: "Dashboard layout improvement",
-    category: "Technical",
-    priority: "Medium",
-    status: "In Progress",
-    description: "Improve dashboard responsiveness on tablets.",
-    created: "2026-10-06"
-  },
-  {
-    id: 1003,
-    title: "Update documentation",
-    category: "General",
-    priority: "Low",
-    status: "Resolved",
-    description: "Update setup instructions.",
-    created: "2026-10-07"
-  },
-  {
-    id: 1004,
-    title: "API connection failure",
-    category: "Network",
-    priority: "Urgent",
-    status: "Open",
-    description: "Investigate a failing API connection.",
-    created: "2026-10-08"
-  }
+const seedTickets = [
+  {id:"DT-1048",title:"Unable to reset account password",description:"Password reset link expires before the customer can use it.",requester:"Olivia Chen",email:"olivia@example.com",category:"Account",priority:"High",status:"Open",assignee:"Alex Morgan",created:daysAgo(0)},
+  {id:"DT-1047",title:"Invoice total does not match subscription",description:"The monthly invoice shows an unexpected additional charge.",requester:"James Wilson",email:"james@example.com",category:"Billing",priority:"High",status:"In Progress",assignee:"Taylor Reed",created:daysAgo(0)},
+  {id:"DT-1046",title:"Dashboard takes too long to load",description:"Analytics page loads slowly with larger datasets.",requester:"Sophia Patel",email:"sophia@example.com",category:"Technical",priority:"Medium",status:"In Progress",assignee:"Alex Morgan",created:daysAgo(1)},
+  {id:"DT-1045",title:"Request to add CSV export",description:"Would like to export reports to CSV.",requester:"Noah Kim",email:"noah@example.com",category:"Feature Request",priority:"Low",status:"Open",assignee:"Jordan Lee",created:daysAgo(1)},
+  {id:"DT-1044",title:"Two-factor authentication setup issue",description:"Verification code is not accepted during setup.",requester:"Emma Davis",email:"emma@example.com",category:"Technical",priority:"High",status:"Open",assignee:"Taylor Reed",created:daysAgo(2)},
+  {id:"DT-1043",title:"Update billing contact details",description:"Customer needs to update the finance contact.",requester:"Liam Brown",email:"liam@example.com",category:"Billing",priority:"Low",status:"Resolved",assignee:"Jordan Lee",created:daysAgo(2)},
+  {id:"DT-1042",title:"Team member invitation not received",description:"Invitation email does not arrive.",requester:"Ava Martinez",email:"ava@example.com",category:"Account",priority:"Medium",status:"Resolved",assignee:"Alex Morgan",created:daysAgo(3)},
+  {id:"DT-1041",title:"Mobile navigation overlaps content",description:"Navigation overlaps page content on smaller screens.",requester:"Ethan Taylor",email:"ethan@example.com",category:"Technical",priority:"Medium",status:"Closed",assignee:"Taylor Reed",created:daysAgo(4)},
+  {id:"DT-1040",title:"Request for additional reporting filters",description:"Filter reports by team and date range.",requester:"Mia Anderson",email:"mia@example.com",category:"Feature Request",priority:"Low",status:"Resolved",assignee:"Jordan Lee",created:daysAgo(5)},
+  {id:"DT-1039",title:"Unable to change profile email",description:"The email field returns an unexpected validation message.",requester:"Lucas Garcia",email:"lucas@example.com",category:"Account",priority:"High",status:"Closed",assignee:"Alex Morgan",created:daysAgo(6)},
+  {id:"DT-1038",title:"Payment confirmation is delayed",description:"Payment completed but confirmation has not appeared.",requester:"Isabella Moore",email:"isabella@example.com",category:"Billing",priority:"Medium",status:"Resolved",assignee:"Taylor Reed",created:daysAgo(7)},
+  {id:"DT-1037",title:"Add keyboard shortcuts to ticket list",description:"Keyboard shortcuts could speed up ticket triage.",requester:"Mason White",email:"mason@example.com",category:"Feature Request",priority:"Low",status:"Open",assignee:"Jordan Lee",created:daysAgo(9)}
 ];
 
-function readStorage(key, fallback) {
+function readJSON(key, fallback) {
   try {
     const value = localStorage.getItem(key);
-    return value === null ? fallback : JSON.parse(value);
+    return value ? JSON.parse(value) : fallback;
   } catch {
     return fallback;
   }
 }
 
-function writeStorage(key, value) {
+function saveJSON(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
-    return true;
   } catch {
-    showToast("Could not save. Check your browser storage settings.");
-    return false;
+    toast("Could not save data in this browser.", "error");
   }
 }
 
-let tickets = readStorage(KEYS.tickets, null);
+let tickets = readJSON(STORAGE_KEY, null);
 if (!Array.isArray(tickets)) {
-  tickets = starterTickets.map(ticket => ({ ...ticket }));
-  writeStorage(KEYS.tickets, tickets);
+  tickets = seedTickets;
+  saveJSON(STORAGE_KEY, tickets);
 }
 
-let settings = {
-  name: "Demo User",
-  email: DEMO_EMAIL,
-  darkMode: false,
+let profile = readJSON(PROFILE_KEY, {
+  name: "Alex Morgan",
+  email: "demo@devtrack.com",
+  timezone: "Asia/Kuala_Lumpur"
+});
+
+let prefs = readJSON(PREF_KEY, {
+  dark: false,
   notifications: true,
-  ...readStorage(KEYS.settings, {})
+  compact: false
+});
+
+let charts = {volume:null, status:null, priority:null};
+let pendingDelete = null;
+
+const escapeHTML = value =>
+  String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;",
+    '"':"&quot;", "'":"&#39;"
+  })[char]);
+
+const initials = name =>
+  String(name || "U").trim().split(/\s+/).slice(0,2)
+    .map(part => part[0]?.toUpperCase() || "").join("");
+
+const activeCount = () =>
+  tickets.filter(t => ["Open","In Progress"].includes(t.status)).length;
+
+const resolvedCount = () =>
+  tickets.filter(t => ["Resolved","Closed"].includes(t.status)).length;
+
+const highCount = () =>
+  tickets.filter(t => t.priority === "High" &&
+    !["Resolved","Closed"].includes(t.status)).length;
+
+const fmtDate = value => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" :
+    date.toLocaleDateString(undefined, {
+      month:"short", day:"numeric", year:"numeric"
+    });
 };
 
-let currentPage = "dashboard";
-let editingId = null;
-let toastTimer;
+const statusClass = status => ({
+  "Open":"status-open",
+  "In Progress":"status-progress",
+  "Resolved":"status-resolved",
+  "Closed":"status-closed"
+}[status] || "status-closed");
 
-const dialog = $("ticketDialog");
+const statusBadge = status =>
+  `<span class="status ${statusClass(status)}">${escapeHTML(status)}</span>`;
 
-function escapeHTML(value) {
-  return String(value).replace(/[&<>"']/g, char => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  })[char]);
-}
-
-function showToast(message) {
-  const toast = $("toast");
-  toast.textContent = message;
-  toast.classList.add("show");
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove("show"), 2600);
-}
+const priorityBadge = priority =>
+  `<span class="priority priority-${String(priority).toLowerCase()}">${escapeHTML(priority)}</span>`;
 
 function persistTickets() {
-  return writeStorage(KEYS.tickets, tickets);
+  saveJSON(STORAGE_KEY, tickets);
 }
 
-function applySettings() {
-  document.body.classList.toggle("dark", settings.darkMode);
-
-  $("sidebarName").textContent = settings.name;
-  $("sidebarEmail").textContent = settings.email;
-  $("sidebarAvatar").textContent =
-    settings.name.trim().charAt(0).toUpperCase() || "D";
-
-  $("welcomeTitle").textContent = `Welcome back, ${settings.name}!`;
-
-  $("profileName").value = settings.name;
-  $("profileEmail").value = settings.email;
-  $("darkMode").checked = settings.darkMode;
-  $("notifications").checked = settings.notifications;
+function toast(message, type = "") {
+  const node = document.createElement("div");
+  node.className = `toast ${type}`;
+  node.textContent = message;
+  $("toastArea").appendChild(node);
+  setTimeout(() => node.remove(), 3200);
 }
 
-function showApplication() {
-  $("loginPage").classList.add("hidden");
-  $("app").classList.remove("hidden");
-  applySettings();
-  render();
-  navigate("dashboard");
-}
-
-function showLogin() {
-  $("app").classList.add("hidden");
-  $("loginPage").classList.remove("hidden");
-  $("loginPassword").value = "";
-  $("loginError").textContent = "";
-}
-
+/* Authentication: demo only, not production security. */
 $("loginForm").addEventListener("submit", event => {
   event.preventDefault();
 
   const email = $("loginEmail").value.trim().toLowerCase();
   const password = $("loginPassword").value;
 
-  if (email !== DEMO_EMAIL || password !== DEMO_PASSWORD) {
+  if (email !== "demo@devtrack.com" || password !== "DevTrack123!") {
     $("loginError").textContent =
-      "Invalid demo credentials. Please check the demo account details.";
+      "Invalid demo credentials. Please use the demo account shown below.";
     return;
   }
 
-  try {
-    sessionStorage.setItem(KEYS.session, "active");
-  } catch {
-    // This remains a demonstration, not secure authentication.
-  }
-
-  showApplication();
-  showToast("Signed in to the demo workspace.");
+  sessionStorage.setItem(AUTH_KEY, "true");
+  showApp();
 });
 
-$("logoutButton").addEventListener("click", () => {
-  if (!confirm("Are you sure you want to log out?")) return;
+function logout() {
+  sessionStorage.removeItem(AUTH_KEY);
+  $("appView").classList.add("hidden");
+  $("loginView").classList.remove("hidden");
+  $("loginError").textContent = "";
+  toast("You have signed out.");
+}
 
-  try {
-    sessionStorage.removeItem(KEYS.session);
-  } catch {
-    // Continue to the login screen.
-  }
+$("logoutButton").addEventListener("click", logout);
+$("settingsLogout").addEventListener("click", logout);
 
-  showLogin();
-  showToast("You have logged out.");
-});
-
-function navigate(page) {
-  if (!["dashboard", "tickets", "settings"].includes(page)) return;
-
-  currentPage = page;
-
+/* Navigation */
+function showPage(page) {
   document.querySelectorAll(".page").forEach(section => {
-    section.classList.toggle("hidden", section.id !== `${page}Page`);
+    section.classList.toggle("hidden", section.id !== `page-${page}`);
   });
 
-  document.querySelectorAll("[data-page]").forEach(button => {
+  document.querySelectorAll(".nav-item").forEach(button => {
     button.classList.toggle("active", button.dataset.page === page);
   });
 
-  const titles = {
-    dashboard: "Dashboard",
-    tickets: "Ticket Management",
-    settings: "Settings"
-  };
+  $("breadcrumbPage").textContent = ({
+    dashboard:"Overview",
+    tickets:"Tickets",
+    settings:"Settings"
+  })[page] || "Overview";
 
-  $("pageTitle").textContent = titles[page];
-  $("headerAddButton").classList.toggle("hidden", page === "settings");
+  if (page === "dashboard") renderDashboard();
+  if (page === "tickets") renderTickets();
+}
+
+document.querySelectorAll(".nav-item").forEach(button => {
+  button.addEventListener("click", () => showPage(button.dataset.page));
+});
+
+$("viewAllTickets").addEventListener("click", () => showPage("tickets"));
+
+function showApp() {
+  $("loginView").classList.add("hidden");
+  $("appView").classList.remove("hidden");
+
   $("todayDate").textContent = new Date().toLocaleDateString(undefined, {
-    day: "numeric",
-    month: "short",
-    year: "numeric"
+    weekday:"short", month:"short", day:"numeric", year:"numeric"
   });
 
-  if (page === "settings") applySettings();
+  updateProfileUI();
+  applyTheme();
+  renderAll();
+  showPage("dashboard");
 }
 
-document.querySelectorAll("[data-page]").forEach(button => {
-  button.addEventListener("click", () => navigate(button.dataset.page));
+function updateProfileUI() {
+  const name = profile.name || "Alex Morgan";
+  const email = profile.email || "demo@devtrack.com";
+
+  $("sidebarName").textContent = name;
+  $("sidebarAvatar").textContent = initials(name);
+  $("settingsAvatar").textContent = initials(name);
+  $("settingsDisplayName").textContent = name;
+  $("settingsEmailDisplay").textContent = email;
+  $("accountEmail").textContent = email;
+
+  $("profileName").value = name;
+  $("profileEmail").value = email;
+  $("profileTimezone").value = profile.timezone || "Asia/Kuala_Lumpur";
+
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" :
+    hour < 18 ? "Good afternoon" : "Good evening";
+
+  $("welcomeTitle").textContent =
+    `${greeting}, ${name.split(" ")[0]} 👋`;
+}
+
+/* Theme */
+function applyTheme() {
+  document.body.classList.toggle("dark", !!prefs.dark);
+  document.body.classList.toggle("compact-tickets", !!prefs.compact);
+  $("themeButton").textContent = prefs.dark ? "☀" : "☾";
+
+  if ($("darkToggle")) $("darkToggle").checked = !!prefs.dark;
+  if ($("notifyToggle")) $("notifyToggle").checked = !!prefs.notifications;
+  if ($("compactToggle")) $("compactToggle").checked = !!prefs.compact;
+}
+
+$("themeButton").addEventListener("click", () => {
+  prefs.dark = !prefs.dark;
+  saveJSON(PREF_KEY, prefs);
+  applyTheme();
+  renderDashboard();
 });
 
-document.querySelectorAll("[data-go]").forEach(button => {
-  button.addEventListener("click", () => navigate(button.dataset.go));
-});
+/* Dashboard statistics and charts */
+function renderDashboard() {
+  const total = tickets.length;
+  const open = activeCount();
+  const high = highCount();
+  const resolved = resolvedCount();
 
-$("headerAddButton").addEventListener("click", () => openTicketForm());
-$("ticketAddButton").addEventListener("click", () => openTicketForm());
+  $("statTotal").textContent = total;
+  $("statOpen").textContent = open;
+  $("statHigh").textContent = high;
+  $("statResolved").textContent = resolved;
+  $("resolvedFoot").textContent = total
+    ? `${Math.round(resolved / total * 100)}% of all tickets completed`
+    : "No tickets yet";
 
-function render() {
-  const counts = {
-    total: tickets.length,
-    open: tickets.filter(t => t.status === "Open").length,
-    progress: tickets.filter(t => t.status === "In Progress").length,
-    resolved: tickets.filter(t => t.status === "Resolved").length
+  $("sidebarTicketCount").textContent = total;
+  $("ticketTotal").textContent = total;
+  $("ticketOpen").textContent = open;
+  $("ticketUrgent").textContent = high;
+  $("ticketDone").textContent = resolved;
+
+  const recent = [...tickets]
+    .sort((a,b) => new Date(b.created) - new Date(a.created))
+    .slice(0,5);
+
+  $("recentTickets").innerHTML = recent.map(ticket => `
+    <tr>
+      <td>
+        <div class="ticket-title">${escapeHTML(ticket.title)}</div>
+        <span class="ticket-id">${escapeHTML(ticket.id)}</span>
+      </td>
+      <td>${statusBadge(ticket.status)}</td>
+      <td>${priorityBadge(ticket.priority)}</td>
+      <td>${fmtDate(ticket.created)}</td>
+    </tr>
+  `).join("") || `
+    <tr><td colspan="4">
+      <div class="empty-state"><strong>No tickets yet</strong>Create your first ticket to get started.</div>
+    </td></tr>`;
+
+  drawCharts();
+}
+
+function drawCharts() {
+  if (typeof Chart === "undefined") {
+    toast("Charts need an internet connection to load Chart.js.", "error");
+    return;
+  }
+
+  Object.values(charts).forEach(chart => {
+    if (chart) chart.destroy();
+  });
+
+  const dark = document.body.classList.contains("dark");
+  const gridColor = dark ? "#30364a" : "#edf0f6";
+  const textColor = dark ? "#a0a8bf" : "#778198";
+
+  const defaults = {
+    responsive:true,
+    maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      tooltip:{backgroundColor:"#202641",padding:11}
+    }
   };
 
-  Object.entries(counts).forEach(([id, count]) => {
-    $(id).textContent = count;
+  const labels = [];
+  const volumes = [];
+
+  for (let i = 6; i >= 0; i--) {
+    const start = new Date();
+    start.setHours(0,0,0,0);
+    start.setDate(start.getDate() - i);
+
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+
+    labels.push(start.toLocaleDateString(undefined, {weekday:"short"}));
+
+    volumes.push(tickets.filter(ticket => {
+      const created = new Date(ticket.created);
+      return created >= start && created < end;
+    }).length);
+  }
+
+  charts.volume = new Chart($("volumeChart"), {
+    type:"line",
+    data:{
+      labels,
+      datasets:[{
+        label:"Tickets",
+        data:volumes,
+        borderColor:"#635bff",
+        backgroundColor:"rgba(99,91,255,.11)",
+        fill:true,
+        tension:.38,
+        borderWidth:2.5,
+        pointRadius:3,
+        pointHoverRadius:5,
+        pointBackgroundColor:"#635bff"
+      }]
+    },
+    options:{
+      ...defaults,
+      scales:{
+        x:{grid:{display:false},border:{display:false},
+          ticks:{color:textColor,font:{size:10}}},
+        y:{beginAtZero:true,
+          ticks:{precision:0,color:textColor,font:{size:10},padding:10},
+          grid:{color:gridColor},border:{display:false}}
+      }
+    }
   });
 
-  renderRecent();
-  renderTickets();
-  renderOverview();
+  const statuses = ["Open","In Progress","Resolved","Closed"];
+  const statusValues = statuses.map(status =>
+    tickets.filter(ticket => ticket.status === status).length
+  );
+  const statusColors = ["#635bff","#f3a536","#19a974","#a9b2c4"];
+
+  charts.status = new Chart($("statusChart"), {
+    type:"doughnut",
+    data:{
+      labels:statuses,
+      datasets:[{
+        data:statusValues,
+        backgroundColor:statusColors,
+        borderWidth:0,
+        hoverOffset:5
+      }]
+    },
+    options:{
+      ...defaults,
+      cutout:"73%"
+    }
+  });
+
+  $("statusLegend").innerHTML = statuses.map((status,index) => `
+    <div class="legend-item">
+      <span class="dot" style="background:${statusColors[index]}"></span>
+      ${status}<strong>${statusValues[index]}</strong>
+    </div>
+  `).join("");
+
+  const priorities = ["High","Medium","Low"];
+  const priorityValues = priorities.map(priority =>
+    tickets.filter(ticket => ticket.priority === priority).length
+  );
+
+  charts.priority = new Chart($("priorityChart"), {
+    type:"bar",
+    data:{
+      labels:priorities,
+      datasets:[{
+        data:priorityValues,
+        backgroundColor:["#e85d75","#f3a536","#19a974"],
+        borderRadius:6,
+        barThickness:28
+      }]
+    },
+    options:{
+      ...defaults,
+      scales:{
+        x:{grid:{display:false},border:{display:false},
+          ticks:{color:textColor,font:{size:10}}},
+        y:{beginAtZero:true,
+          ticks:{precision:0,color:textColor,font:{size:10},padding:8},
+          grid:{color:gridColor},border:{display:false}}
+      }
+    }
+  });
 }
 
-function badge(value) {
-  const safe = escapeHTML(value);
-  const className = safe.replace(/\s/g, "-");
-  return `<span class="badge ${className}">${safe}</span>`;
-}
-
-function ticketTitle(ticket) {
-  return `
-    <div class="ticket-title">${escapeHTML(ticket.title)}</div>
-    <div class="ticket-id">#${escapeHTML(ticket.id)}</div>
-  `;
-}
-
-function renderRecent() {
-  const recent = [...tickets]
-    .sort((a, b) => b.id - a.id)
-    .slice(0, 5);
-
-  $("recentList").innerHTML = recent.length
-    ? recent.map(ticket => `
-      <tr>
-        <td>${ticketTitle(ticket)}</td>
-        <td>${escapeHTML(ticket.category)}</td>
-        <td>${badge(ticket.priority)}</td>
-        <td>${badge(ticket.status)}</td>
-        <td>${escapeHTML(ticket.created)}</td>
-      </tr>
-    `).join("")
-    : `<tr><td colspan="5">No tickets yet. Create your first ticket.</td></tr>`;
-}
-
+/* Ticket search, filters and table */
 function renderTickets() {
-  const query = $("search").value.trim().toLowerCase();
+  const query = $("ticketSearch").value.trim().toLowerCase();
   const status = $("statusFilter").value;
   const priority = $("priorityFilter").value;
+  const category = $("categoryFilter").value;
 
-  const filtered = tickets.filter(ticket => {
-    const searchable =
-      `${ticket.title} ${ticket.category} ${ticket.id} ${ticket.description}`
-        .toLowerCase();
+  const filtered = [...tickets].filter(ticket => {
+    const searchable = [
+      ticket.id,ticket.title,ticket.description,ticket.requester,
+      ticket.email,ticket.assignee,ticket.category
+    ].join(" ").toLowerCase();
 
-    return searchable.includes(query)
-      && (status === "All" || ticket.status === status)
-      && (priority === "All" || ticket.priority === priority);
-  }).sort((a, b) => b.id - a.id);
+    return (!query || searchable.includes(query)) &&
+      (!status || ticket.status === status) &&
+      (!priority || ticket.priority === priority) &&
+      (!category || ticket.category === category);
+  }).sort((a,b) => new Date(b.created) - new Date(a.created));
 
-  $("ticketCount").textContent =
+  $("ticketRows").innerHTML = filtered.map(ticket => `
+    <tr>
+      <td>
+        <div class="ticket-title">${escapeHTML(ticket.title)}</div>
+        <div class="ticket-subtitle">${escapeHTML(ticket.description || "No description provided")}</div>
+        <span class="ticket-id">${escapeHTML(ticket.id)}</span>
+      </td>
+      <td>
+        <div>${escapeHTML(ticket.requester)}</div>
+        <div class="small muted">${escapeHTML(ticket.assignee || "Unassigned")}</div>
+      </td>
+      <td>${escapeHTML(ticket.category)}</td>
+      <td>${statusBadge(ticket.status)}</td>
+      <td>${priorityBadge(ticket.priority)}</td>
+      <td>${fmtDate(ticket.created)}</td>
+      <td>
+        <div class="row-actions">
+          <button class="row-action" data-edit="${escapeHTML(ticket.id)}" title="Edit ticket">✎</button>
+          <button class="row-action delete" data-delete="${escapeHTML(ticket.id)}" title="Delete ticket">×</button>
+        </div>
+      </td>
+    </tr>
+  `).join("") || `
+    <tr><td colspan="7">
+      <div class="empty-state"><div>⌕</div><strong>No matching tickets</strong>Try adjusting your search or filters.</div>
+    </td></tr>`;
+
+  $("ticketResultCount").textContent =
     `Showing ${filtered.length} of ${tickets.length} tickets`;
 
-  $("ticketList").innerHTML = filtered.length
-    ? filtered.map(ticket => `
-      <tr>
-        <td>${ticketTitle(ticket)}</td>
-        <td>${escapeHTML(ticket.category)}</td>
-        <td>${badge(ticket.priority)}</td>
-        <td>${badge(ticket.status)}</td>
-        <td>${escapeHTML(ticket.created)}</td>
-        <td>
-          <div class="action-group">
-            <button class="action" data-edit="${ticket.id}">Edit</button>
-            <button class="action delete" data-delete="${ticket.id}">
-              Delete
-            </button>
-          </div>
-        </td>
-      </tr>
-    `).join("")
-    : `<tr><td colspan="6">No matching tickets found.</td></tr>`;
+  $("sidebarTicketCount").textContent = tickets.length;
+
+  $("ticketRows").querySelectorAll("[data-edit]").forEach(button => {
+    button.addEventListener("click", () => openTicketModal(button.dataset.edit));
+  });
+
+  $("ticketRows").querySelectorAll("[data-delete]").forEach(button => {
+    button.addEventListener("click", () => askDelete(button.dataset.delete));
+  });
 }
 
-function renderOverview() {
-  const items = [
-    { label: "Open", count: tickets.filter(t => t.status === "Open").length, fill: "fill-open" },
-    { label: "In Progress", count: tickets.filter(t => t.status === "In Progress").length, fill: "fill-progress" },
-    { label: "Resolved", count: tickets.filter(t => t.status === "Resolved").length, fill: "fill-resolved" }
-  ];
-
-  const total = tickets.length;
-
-  $("statusOverview").innerHTML = items.map(item => {
-    const percentage = total ? Math.round(item.count / total * 100) : 0;
-
-    return `
-      <div class="overview-row">
-        <span>${item.label}</span>
-        <div class="progress-track">
-          <div class="progress-fill ${item.fill}"
-            style="width:${percentage}%"></div>
-        </div>
-        <strong>${item.count}</strong>
-      </div>
-    `;
-  }).join("");
-}
-
-$("search").addEventListener("input", renderTickets);
-$("statusFilter").addEventListener("change", renderTickets);
-$("priorityFilter").addEventListener("change", renderTickets);
-
-function openTicketForm(ticket = null) {
-  editingId = ticket ? ticket.id : null;
-  $("ticketForm").reset();
-
-  $("ticketId").value = ticket?.id ?? "";
-  $("formTitle").textContent = ticket ? "Edit Ticket" : "Create Ticket";
-  $("title").value = ticket?.title ?? "";
-  $("description").value = ticket?.description ?? "";
-  $("category").value = ticket?.category ?? "Technical";
-  $("priority").value = ticket?.priority ?? "Medium";
-  $("status").value = ticket?.status ?? "Open";
-
-  dialog.showModal();
-}
-
-function closeTicketForm() {
-  dialog.close();
-  editingId = null;
-}
-
-$("closeButton").addEventListener("click", closeTicketForm);
-$("cancelButton").addEventListener("click", closeTicketForm);
-
-dialog.addEventListener("click", event => {
-  if (event.target === dialog) closeTicketForm();
+["ticketSearch","statusFilter","priorityFilter","categoryFilter"].forEach(id => {
+  $(id).addEventListener(id === "ticketSearch" ? "input" : "change", renderTickets);
 });
 
-$("ticketList").addEventListener("click", event => {
-  const edit = event.target.closest("[data-edit]");
-  const remove = event.target.closest("[data-delete]");
+$("clearFilters").addEventListener("click", () => {
+  $("ticketSearch").value = "";
+  $("statusFilter").value = "";
+  $("priorityFilter").value = "";
+  $("categoryFilter").value = "";
+  renderTickets();
+});
 
-  if (edit) {
-    const ticket = tickets.find(t => t.id === Number(edit.dataset.edit));
-    if (ticket) openTicketForm(ticket);
+/* Shared create/edit ticket modal */
+$("headerCreateButton").addEventListener("click", () => openTicketModal());
+
+function openTicketModal(id = null) {
+  $("ticketForm").reset();
+  $("ticketEditId").value = "";
+  $("ticketModal").classList.remove("hidden");
+
+  if (id) {
+    const ticket = tickets.find(item => item.id === id);
+    if (!ticket) return;
+
+    $("modalTitle").textContent = "Edit ticket";
+    $("saveTicketButton").textContent = "Save changes";
+    $("ticketEditId").value = ticket.id;
+    $("ticketTitle").value = ticket.title;
+    $("ticketDescription").value = ticket.description || "";
+    $("ticketRequester").value = ticket.requester;
+    $("ticketEmail").value = ticket.email || "";
+    $("ticketCategory").value = ticket.category;
+    $("ticketPriority").value = ticket.priority;
+    $("ticketStatus").value = ticket.status;
+    $("ticketAssignee").value = ticket.assignee || "";
+  } else {
+    $("modalTitle").textContent = "Create ticket";
+    $("saveTicketButton").textContent = "Create ticket";
+    $("ticketStatus").value = "Open";
+    $("ticketPriority").value = "Medium";
   }
 
-  if (remove) {
-    const id = Number(remove.dataset.delete);
-    const ticket = tickets.find(t => t.id === id);
+  setTimeout(() => $("ticketTitle").focus(), 50);
+}
 
-    if (!ticket || !confirm(`Delete "${ticket.title}"?`)) return;
+function closeTicketModal() {
+  $("ticketModal").classList.add("hidden");
+}
 
-    const previous = tickets;
-    tickets = tickets.filter(t => t.id !== id);
+$("closeModal").addEventListener("click", closeTicketModal);
+$("cancelModal").addEventListener("click", closeTicketModal);
 
-    if (persistTickets()) {
-      render();
-      showToast("Ticket deleted.");
-    } else {
-      tickets = previous;
-    }
-  }
+$("ticketModal").addEventListener("click", event => {
+  if (event.target === $("ticketModal")) closeTicketModal();
 });
 
 $("ticketForm").addEventListener("submit", event => {
   event.preventDefault();
 
-  const title = $("title").value.trim();
-  const description = $("description").value.trim();
+  const editId = $("ticketEditId").value;
+  const title = $("ticketTitle").value.trim();
+  const requester = $("ticketRequester").value.trim();
 
-  if (!title || !description) return;
+  if (!title || !requester) {
+    toast("Please complete the required fields.", "error");
+    return;
+  }
 
-  const existing = tickets.find(t => t.id === editingId);
-
-  const ticket = {
-    id: existing?.id ?? Date.now(),
+  const data = {
     title,
-    description,
-    category: $("category").value,
-    priority: $("priority").value,
-    status: $("status").value,
-    created: existing?.created ?? new Date().toISOString().slice(0, 10)
+    description:$("ticketDescription").value.trim(),
+    requester,
+    email:$("ticketEmail").value.trim(),
+    category:$("ticketCategory").value,
+    priority:$("ticketPriority").value,
+    status:$("ticketStatus").value,
+    assignee:$("ticketAssignee").value.trim()
   };
 
-  const previous = tickets;
+  if (editId) {
+    const index = tickets.findIndex(ticket => ticket.id === editId);
+    if (index < 0) return;
 
-  tickets = existing
-    ? tickets.map(t => t.id === existing.id ? ticket : t)
-    : [ticket, ...tickets];
-
-  if (persistTickets()) {
-    closeTicketForm();
-    render();
-    showToast(existing ? "Ticket updated." : "Ticket created.");
+    tickets[index] = {...tickets[index], ...data};
+    toast("Ticket updated successfully.");
   } else {
-    tickets = previous;
+    const highestId = tickets.reduce((max,ticket) =>
+      Math.max(max, Number(String(ticket.id).replace(/\D/g,"")) || 1036), 1036
+    );
+
+    tickets.push({
+      id:`DT-${highestId + 1}`,
+      created:new Date().toISOString(),
+      ...data
+    });
+
+    if (prefs.notifications) toast("Ticket created successfully.");
   }
+
+  persistTickets();
+  closeTicketModal();
+  renderAll();
+  showPage("tickets");
 });
 
-$("settingsForm").addEventListener("submit", event => {
+/* Delete with confirmation */
+function askDelete(id) {
+  const ticket = tickets.find(item => item.id === id);
+  if (!ticket) return;
+
+  pendingDelete = id;
+  $("confirmCopy").textContent =
+    `"${ticket.title}" (${ticket.id}) will be permanently removed from this browser's demo data.`;
+  $("confirmModal").classList.remove("hidden");
+}
+
+function closeConfirm() {
+  $("confirmModal").classList.add("hidden");
+  pendingDelete = null;
+}
+
+$("closeConfirm").addEventListener("click", closeConfirm);
+$("cancelConfirm").addEventListener("click", closeConfirm);
+
+$("confirmModal").addEventListener("click", event => {
+  if (event.target === $("confirmModal")) closeConfirm();
+});
+
+$("confirmDelete").addEventListener("click", () => {
+  if (!pendingDelete) return;
+
+  tickets = tickets.filter(ticket => ticket.id !== pendingDelete);
+  persistTickets();
+  closeConfirm();
+  renderAll();
+  toast("Ticket deleted.");
+});
+
+/* Settings navigation */
+document.querySelectorAll(".settings-link").forEach(button => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll(".settings-link").forEach(item => {
+      item.classList.toggle("active", item === button);
+    });
+
+    ["profile","preferences","account"].forEach(section => {
+      $(`settings-${section}`).classList.toggle(
+        "hidden", section !== button.dataset.settings
+      );
+    });
+  });
+});
+
+$("profileForm").addEventListener("submit", event => {
   event.preventDefault();
 
   const name = $("profileName").value.trim();
   const email = $("profileEmail").value.trim();
 
-  if (!name || !email) return;
-
-  const previous = { ...settings };
-
-  settings = {
-    ...settings,
-    name,
-    email,
-    darkMode: $("darkMode").checked,
-    notifications: $("notifications").checked
-  };
-
-  if (!writeStorage(KEYS.settings, settings)) {
-    settings = previous;
+  if (!name || !email) {
+    toast("Name and email are required.", "error");
     return;
   }
 
-  applySettings();
-  $("settingsMessage").textContent = "Settings saved successfully.";
-  showToast("Settings saved.");
+  profile = {
+    ...profile,
+    name,
+    email,
+    timezone:$("profileTimezone").value
+  };
+
+  saveJSON(PROFILE_KEY, profile);
+  updateProfileUI();
+  toast("Profile saved.");
 });
 
-function initialize() {
-  applySettings();
+$("darkToggle").addEventListener("change", event => {
+  prefs.dark = event.target.checked;
+  applyTheme();
+});
 
-  let activeSession = false;
-  try {
-    activeSession = sessionStorage.getItem(KEYS.session) === "active";
-  } catch {
-    // Storage might be disabled in the browser.
-  }
+$("savePreferences").addEventListener("click", () => {
+  prefs.dark = $("darkToggle").checked;
+  prefs.notifications = $("notifyToggle").checked;
+  prefs.compact = $("compactToggle").checked;
 
-  if (activeSession) {
-    showApplication();
-  } else {
-    showLogin();
-  }
+  saveJSON(PREF_KEY, prefs);
+  applyTheme();
+  renderDashboard();
+  toast("Preferences saved.");
+});
+
+/* CSV export */
+function downloadCSV() {
+  const headers = [
+    "ID","Title","Description","Requester","Email",
+    "Category","Priority","Status","Assignee","Created"
+  ];
+
+  const rows = tickets.map(ticket => [
+    ticket.id,ticket.title,ticket.description,ticket.requester,
+    ticket.email,ticket.category,ticket.priority,ticket.status,
+    ticket.assignee,ticket.created
+  ]);
+
+  const csv = [headers,...rows].map(row =>
+    row.map(value => `"${String(value ?? "").replace(/"/g,'""')}"`).join(",")
+  ).join("\r\n");
+
+  const blob = new Blob(["\uFEFF" + csv], {
+    type:"text/csv;charset=utf-8;"
+  });
+
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = "devtrack-tickets.csv";
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+  toast("CSV export downloaded.");
 }
 
-initialize();
+$("exportButton").addEventListener("click", downloadCSV);
+$("ticketExportButton").addEventListener("click", downloadCSV);
+
+$("helpButton").addEventListener("click", () => {
+  toast("Use Overview for analytics, Tickets to manage requests, and Settings to personalize your workspace.");
+});
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    closeTicketModal();
+    closeConfirm();
+  }
+
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+    if (!$("appView").classList.contains("hidden")) {
+      event.preventDefault();
+      showPage("tickets");
+      $("ticketSearch").focus();
+    }
+  }
+});
+
+function renderAll() {
+  renderDashboard();
+  renderTickets();
+}
+
+/* Initialize */
+applyTheme();
+
+if (sessionStorage.getItem(AUTH_KEY) === "true") {
+  showApp();
+}
