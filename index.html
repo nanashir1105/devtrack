@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevTrack | Issue Tracker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <h2>DevTrack<span>.</span></h2>
+    <p class="menu-label">WORKSPACE</p>
+    <a class="active" href="#dashboard">▦ Dashboard</a>
+    <a href="#tickets">▤ All Tickets</a>
+    <p class="sidebar-footer">Portfolio Project · 2026</p>
+  </aside>
+
+  <main>
+    <header>
+      <div>
+        <p class="eyebrow">WORKSPACE / OVERVIEW</p>
+        <h1>Issue Dashboard</h1>
+        <p class="subtitle">Track, organize, and resolve issues.</p>
+      </div>
+      <button id="addButton">+ New Ticket</button>
+    </header>
+
+    <section class="stats" id="dashboard">
+      <article class="stat-card">
+        <p>Total Tickets</p><h2 id="total">0</h2>
+        <span>All recorded issues</span>
+      </article>
+      <article class="stat-card">
+        <p>Open</p><h2 id="open">0</h2>
+        <span>Awaiting action</span>
+      </article>
+      <article class="stat-card">
+        <p>In Progress</p><h2 id="progress">0</h2>
+        <span>Currently being worked on</span>
+      </article>
+      <article class="stat-card">
+        <p>Resolved</p><h2 id="resolved">0</h2>
+        <span>Successfully completed</span>
+      </article>
+    </section>
+
+    <section class="panel" id="tickets">
+      <div class="panel-heading">
+        <div>
+          <h2>Recent Tickets</h2>
+          <p>Manage your support issues</p>
+        </div>
+        <input id="search" type="search" placeholder="Search tickets...">
+      </div>
+
+      <div class="filters">
+        <button class="filter active" data-filter="All">All</button>
+        <button class="filter" data-filter="Open">Open</button>
+        <button class="filter" data-filter="In Progress">In Progress</button>
+        <button class="filter" data-filter="Resolved">Resolved</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>TICKET</th><th>CATEGORY</th><th>PRIORITY</th>
+              <th>STATUS</th><th>CREATED</th><th>ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody id="ticketList"></tbody>
+        </table>
+      </div>
+      <p class="note">Changes are stored in this browser on this device.</p>
+    </section>
+
+    <footer>DevTrack · Built with HTML, CSS & JavaScript</footer>
+  </main>
+
+  <dialog id="ticketDialog">
+    <form id="ticketForm">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">TICKET MANAGEMENT</p>
+          <h2 id="formTitle">Create Ticket</h2>
+        </div>
+        <button type="button" id="closeButton" class="close">×</button>
+      </div>
+
+      <input type="hidden" id="ticketId">
+
+      <label for="title">Ticket Title</label>
+      <input id="title" maxlength="100" required
+             placeholder="e.g. Login page error">
+
+      <label for="description">Description</label>
+      <textarea id="description" maxlength="2000" required
+                placeholder="Describe the issue..."></textarea>
+
+      <div class="form-row">
+        <div>
+          <label for="category">Category</label>
+          <select id="category">
+            <option>Technical</option>
+            <option>Software</option>
+            <option>Hardware</option>
+            <option>Network</option>
+            <option>General</option>
+          </select>
+        </div>
+        <div>
+          <label for="priority">Priority</label>
+          <select id="priority">
+            <option>Low</option>
+            <option selected>Medium</option>
+            <option>High</option>
+            <option>Urgent</option>
+          </select>
+        </div>
+      </div>
+
+      <label for="status">Status</label>
+      <select id="status">
+        <option>Open</option>
+        <option>In Progress</option>
+        <option>Resolved</option>
+      </select>
+
+      <button class="submit-button" type="submit">Save Ticket</button>
+    </form>
+  </dialog>
+
+  <script src="script.js"></script>
+</body>
+</html>
