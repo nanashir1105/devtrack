@@ -475,7 +475,10 @@ body.dark .green { background: #203e37; }
     padding: 13px;
   }
   .logo { margin: 0 5px 12px; }
-  .nav-label, .sidebar-bottom { display: none; }
+  .nav-label { display: none; }
+  .sidebar-bottom { display: block; margin-top: 8px; }
+  .user-mini { padding: 10px 5px; }
+  .sidebar-bottom .logout { display: block; width: 100%; text-align: left; }
   .nav-link {
     display: inline-block;
     width: auto;
@@ -500,4 +503,13 @@ body.dark .green { background: #203e37; }
   .form-grid { grid-template-columns: 1fr; gap: 0; }
   .login-card { padding: 25px; }
   .overview-row { grid-template-columns: 85px 1fr 25px; }
+}
+
+
+/* Accessibility and small-screen fixes */
+button:disabled { opacity: .55; cursor: not-allowed; }
+@media (max-width: 760px) {
+  .topbar { flex-wrap: wrap; }
+  .topbar-right { max-width: none; justify-content: flex-start; }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
