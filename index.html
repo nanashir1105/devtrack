@@ -1,316 +1,361 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#111827">
-  <title>DevTrack | Helpdesk System</title>
+  <title>DevTrack — Support Operations</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="script.js" defer></script>
 </head>
 <body>
 
   <!-- LOGIN -->
-  <section id="loginPage" class="login-page">
-    <form id="loginForm" class="login-card">
-      <div class="brand-mark">D</div>
-      <h1>Welcome to DevTrack</h1>
-      <p class="muted">Sign in to manage your workspace.</p>
-
-      <label for="loginEmail">Email address</label>
-      <input id="loginEmail" type="email" required
-        placeholder="demo@devtrack.com">
-
-      <label for="loginPassword">Password</label>
-      <input id="loginPassword" type="password" required
-        placeholder="Enter your password">
-
-      <p id="loginError" class="error" role="alert"></p>
-      <button class="primary full" type="submit">Sign in</button>
-
-      <div class="demo-info">
-        <strong>Demo account</strong>
-        <p>Email: demo@devtrack.com</p>
-        <p>Password: DevTrack123!</p>
+  <section id="loginView">
+    <div class="login-art">
+      <div class="brand">
+        <div class="brand-mark">✳</div>
+        <span>DevTrack</span>
       </div>
-      <p class="muted small">Portfolio demonstration only. Not for real credentials.</p>
-    </form>
+
+      <div class="art-content">
+        <h1>Support that keeps your team moving.</h1>
+        <p>One clear workspace for customer issues, team performance, and the work that matters most.</p>
+        <div class="art-stat">
+          <div style="font-size:25px">◉</div>
+          <div>
+            <strong>One workspace.</strong>
+            <span>Everything your support team needs.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="login-copyright">© 2026 DevTrack · Support Operations</div>
+    </div>
+
+    <div class="login-form-wrap">
+      <form id="loginForm" class="login-form">
+        <div class="brand login-brand">
+          <div class="brand-mark">✳</div>
+          <span>DevTrack</span>
+        </div>
+
+        <h2>Welcome back</h2>
+        <p class="intro">Sign in to access your support workspace.</p>
+
+        <div class="field">
+          <label for="loginEmail">Work email</label>
+          <input id="loginEmail" type="email" value="demo@devtrack.com" required>
+        </div>
+
+        <div class="field">
+          <label for="loginPassword">Password</label>
+          <input id="loginPassword" type="password" value="DevTrack123!" required>
+        </div>
+
+        <div id="loginError" class="error-message" role="alert"></div>
+        <button class="btn btn-primary btn-full" type="submit">Sign in to workspace →</button>
+
+        <div class="demo-hint">
+          <strong>Demo account</strong><br>
+          Email: demo@devtrack.com<br>
+          Password: DevTrack123!
+        </div>
+      </form>
+    </div>
   </section>
 
   <!-- APPLICATION -->
-  <div id="app" class="app hidden">
+  <div id="appView" class="hidden">
     <aside class="sidebar">
-      <a href="#dashboard" class="logo" data-page="dashboard">
-        <span class="brand-mark small-mark">D</span>
-        <span>DevTrack<span class="accent">.</span></span>
-      </a>
+      <div class="brand sidebar-brand">
+        <div class="brand-mark">✳</div>
+        <span class="brand-name">DevTrack</span>
+      </div>
 
-      <p class="nav-label">WORKSPACE</p>
-      <button class="nav-link active" data-page="dashboard">▦ Dashboard</button>
-      <button class="nav-link" data-page="tickets">▤ Ticket Management</button>
+      <div class="nav-label">Workspace</div>
+      <button class="nav-item active" data-page="dashboard">
+        <span class="nav-icon">▦</span><span class="nav-text">Overview</span>
+      </button>
+      <button class="nav-item" data-page="tickets">
+        <span class="nav-icon">▤</span><span class="nav-text">Tickets</span>
+        <span class="nav-count" id="sidebarTicketCount">0</span>
+      </button>
 
-      <p class="nav-label">PREFERENCES</p>
-      <button class="nav-link" data-page="settings">⚙ Settings</button>
+      <div class="nav-label">Manage</div>
+      <button class="nav-item" data-page="settings">
+        <span class="nav-icon">⚙</span><span class="nav-text">Settings</span>
+      </button>
 
       <div class="sidebar-bottom">
-        <div class="user-mini">
-          <div class="avatar" id="sidebarAvatar">D</div>
-          <div class="user-info">
-            <strong id="sidebarName">Demo User</strong>
-            <span id="sidebarEmail">demo@devtrack.com</span>
-          </div>
+        <div class="help-card">
+          <strong>Need a hand?</strong>
+          <p>Keep your support workflow organized with DevTrack.</p>
+          <button id="helpButton">Workspace guide ↗</button>
         </div>
-        <button id="logoutButton" class="nav-link logout">↪ Log out</button>
+
+        <div class="user-card">
+          <div class="avatar" id="sidebarAvatar">AD</div>
+          <div class="user-info">
+            <strong id="sidebarName">Alex Morgan</strong>
+            <span>Workspace admin</span>
+          </div>
+          <button class="logout-mini" id="logoutButton" title="Sign out">↗</button>
+        </div>
       </div>
     </aside>
 
     <main class="main">
       <header class="topbar">
-        <div>
-          <p class="eyebrow">YOUR WORKSPACE</p>
-          <h1 id="pageTitle">Dashboard</h1>
+        <div class="breadcrumb">
+          Workspace <span>/</span> <strong id="breadcrumbPage">Overview</strong>
         </div>
-        <div class="topbar-right">
-          <span class="online-dot"></span>
-          <span class="muted small">Demo workspace</span>
-          <button id="headerAddButton" class="primary">+ New Ticket</button>
+        <div class="top-actions">
+          <span class="top-date" id="todayDate"></span>
+          <button class="icon-btn" id="themeButton" title="Toggle dark mode">☾</button>
+          <button class="btn btn-primary" id="headerCreateButton">＋ New ticket</button>
         </div>
       </header>
 
-      <!-- DASHBOARD -->
-      <section id="dashboardPage" class="page">
-        <div class="welcome">
-          <div>
-            <h2 id="welcomeTitle">Welcome back!</h2>
-            <p>Here's what's happening with your tickets today.</p>
-          </div>
-          <span id="todayDate" class="date-label"></span>
-        </div>
+      <div class="content">
 
-        <div class="stats">
-          <article class="stat-card">
-            <span class="stat-icon purple">▤</span>
-            <p>Total Tickets</p>
-            <h2 id="total">0</h2>
-            <span class="muted small">All recorded issues</span>
-          </article>
-          <article class="stat-card">
-            <span class="stat-icon red">◷</span>
-            <p>Open</p>
-            <h2 id="open">0</h2>
-            <span class="muted small">Awaiting action</span>
-          </article>
-          <article class="stat-card">
-            <span class="stat-icon orange">↗</span>
-            <p>In Progress</p>
-            <h2 id="progress">0</h2>
-            <span class="muted small">Currently being worked on</span>
-          </article>
-          <article class="stat-card">
-            <span class="stat-icon green">✓</span>
-            <p>Resolved</p>
-            <h2 id="resolved">0</h2>
-            <span class="muted small">Successfully completed</span>
-          </article>
-        </div>
-
-        <div class="content-card">
-          <div class="section-heading">
+        <!-- DASHBOARD -->
+        <section id="page-dashboard" class="page">
+          <div class="page-heading">
             <div>
-              <h2>Recent Tickets</h2>
-              <p class="muted">Your latest recorded issues</p>
+              <h1>Overview</h1>
+              <p>Here's what's happening across your support workspace.</p>
             </div>
-            <button class="text-button" data-go="tickets">View all →</button>
+            <button class="btn" id="exportButton">↓ Export report</button>
           </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>TICKET</th>
-                  <th>CATEGORY</th>
-                  <th>PRIORITY</th>
-                  <th>STATUS</th>
-                  <th>CREATED</th>
-                </tr>
-              </thead>
-              <tbody id="recentList"></tbody>
-            </table>
-          </div>
-        </div>
 
-        <div class="content-card">
-          <div class="section-heading">
+          <div class="welcome-banner">
             <div>
-              <h2>Ticket Overview</h2>
-              <p class="muted">Distribution by status</p>
+              <h2 id="welcomeTitle">Good morning, Alex 👋</h2>
+              <p>Your team's support activity at a glance.</p>
+            </div>
+            <div class="welcome-pill">✦ Live workspace overview</div>
+          </div>
+
+          <div class="stats-grid">
+            <article class="stat-card">
+              <div class="stat-top"><div class="stat-icon purple">▤</div><span class="stat-trend">All tickets</span></div>
+              <div class="stat-value" id="statTotal">0</div>
+              <div class="stat-label">Total tickets</div>
+              <div class="stat-foot">Across all statuses</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top"><div class="stat-icon blue">◷</div><span class="stat-trend">Needs attention</span></div>
+              <div class="stat-value" id="statOpen">0</div>
+              <div class="stat-label">Open tickets</div>
+              <div class="stat-foot">Open and in progress</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top"><div class="stat-icon orange">⚑</div><span class="stat-trend">Priority</span></div>
+              <div class="stat-value" id="statHigh">0</div>
+              <div class="stat-label">High-priority tickets</div>
+              <div class="stat-foot">Require closer attention</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top"><div class="stat-icon green">✓</div><span class="stat-trend">Completed</span></div>
+              <div class="stat-value" id="statResolved">0</div>
+              <div class="stat-label">Resolved tickets</div>
+              <div class="stat-foot" id="resolvedFoot">Across all tickets</div>
+            </article>
+          </div>
+
+          <div class="dashboard-grid">
+            <article class="panel">
+              <div class="panel-head">
+                <div><h2>Ticket volume</h2><p>Tickets created over the last 7 days</p></div>
+                <span class="small muted">Last 7 days</span>
+              </div>
+              <div class="panel-body chart-container">
+                <canvas id="volumeChart"></canvas>
+              </div>
+            </article>
+
+            <article class="panel">
+              <div class="panel-head">
+                <div><h2>Status distribution</h2><p>How tickets are progressing</p></div>
+              </div>
+              <div class="panel-body">
+                <div class="doughnut-container"><canvas id="statusChart"></canvas></div>
+                <div class="legend-list" id="statusLegend"></div>
+              </div>
+            </article>
+          </div>
+
+          <div class="bottom-grid">
+            <article class="panel">
+              <div class="panel-head">
+                <div><h2>Recent tickets</h2><p>Latest workspace activity</p></div>
+                <button class="btn" id="viewAllTickets">View all →</button>
+              </div>
+              <div class="table-scroll">
+                <table>
+                  <thead><tr><th>Ticket</th><th>Status</th><th>Priority</th><th>Created</th></tr></thead>
+                  <tbody id="recentTickets"></tbody>
+                </table>
+              </div>
+            </article>
+
+            <article class="panel">
+              <div class="panel-head">
+                <div><h2>Priority breakdown</h2><p>Tickets by urgency</p></div>
+              </div>
+              <div class="panel-body chart-container priority-chart">
+                <canvas id="priorityChart"></canvas>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- TICKETS -->
+        <section id="page-tickets" class="page hidden">
+          <div class="page-heading">
+            <div><h1>Tickets</h1><p>Manage and track support requests in one place.</p></div>
+            <button class="btn" id="ticketExportButton">↓ Export CSV</button>
+          </div>
+
+          <div class="stats-grid">
+            <article class="stat-card"><div class="stat-icon purple">▤</div><div class="stat-value" id="ticketTotal">0</div><div class="stat-label">All tickets</div></article>
+            <article class="stat-card"><div class="stat-icon blue">◷</div><div class="stat-value" id="ticketOpen">0</div><div class="stat-label">Open / in progress</div></article>
+            <article class="stat-card"><div class="stat-icon orange">⚑</div><div class="stat-value" id="ticketUrgent">0</div><div class="stat-label">High priority</div></article>
+            <article class="stat-card"><div class="stat-icon green">✓</div><div class="stat-value" id="ticketDone">0</div><div class="stat-label">Resolved / closed</div></article>
+          </div>
+
+          <article class="panel">
+            <div class="panel-head">
+              <div><h2>All support tickets</h2><p>Use the row actions to edit or delete a ticket.</p></div>
+            </div>
+            <div class="ticket-toolbar">
+              <div class="search-wrap">
+                <span class="search-symbol">⌕</span>
+                <input class="search-input" id="ticketSearch" placeholder="Search tickets…" aria-label="Search tickets">
+              </div>
+              <select id="statusFilter" aria-label="Filter by status">
+                <option value="">All statuses</option><option>Open</option><option>In Progress</option><option>Resolved</option><option>Closed</option>
+              </select>
+              <select id="priorityFilter" aria-label="Filter by priority">
+                <option value="">All priorities</option><option>High</option><option>Medium</option><option>Low</option>
+              </select>
+              <select id="categoryFilter" aria-label="Filter by category">
+                <option value="">All categories</option><option>Technical</option><option>Billing</option><option>Account</option><option>Feature Request</option><option>Other</option>
+              </select>
+              <button class="btn" id="clearFilters">Reset</button>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Ticket details</th><th>Requester</th><th>Category</th><th>Status</th><th>Priority</th><th>Created</th><th>Actions</th></tr></thead>
+                <tbody id="ticketRows"></tbody>
+              </table>
+            </div>
+            <div class="table-footer">
+              <span id="ticketResultCount">0 tickets</span>
+              <span>✎ Edit · × Delete</span>
+            </div>
+          </article>
+        </section>
+
+        <!-- SETTINGS -->
+        <section id="page-settings" class="page hidden">
+          <div class="page-heading">
+            <div><h1>Settings</h1><p>Personalize your workspace and account.</p></div>
+          </div>
+
+          <div class="settings-layout">
+            <div class="panel settings-nav">
+              <button class="settings-link active" data-settings="profile">♙ &nbsp; Profile</button>
+              <button class="settings-link" data-settings="preferences">⚙ &nbsp; Preferences</button>
+              <button class="settings-link" data-settings="account">♧ &nbsp; Account</button>
+            </div>
+
+            <div class="panel">
+              <div id="settings-profile" class="settings-section">
+                <h2>Profile information</h2>
+                <p>Update your workspace account information.</p>
+                <div class="settings-avatar">
+                  <div class="big-avatar" id="settingsAvatar">AD</div>
+                  <div><strong id="settingsDisplayName">Alex Morgan</strong><div class="small muted" id="settingsEmailDisplay"></div></div>
+                </div>
+                <form id="profileForm">
+                  <div class="settings-form-grid">
+                    <div class="field"><label for="profileName">Full name</label><input id="profileName" required maxlength="80"></div>
+                    <div class="field"><label for="profileEmail">Email address</label><input id="profileEmail" type="email" required></div>
+                    <div class="field"><label>Role</label><input value="Workspace Administrator" disabled></div>
+                    <div class="field"><label for="profileTimezone">Timezone</label>
+                      <select id="profileTimezone"><option>Asia/Kuala_Lumpur</option><option>Asia/Singapore</option><option>UTC</option><option>America/New_York</option><option>Europe/London</option></select>
+                    </div>
+                  </div>
+                  <button class="btn btn-primary" type="submit">Save profile</button>
+                </form>
+              </div>
+
+              <div id="settings-preferences" class="settings-section hidden">
+                <h2>Workspace preferences</h2><p>Choose how the application looks and behaves.</p>
+                <div class="toggle-row"><div class="toggle-copy"><strong>Dark appearance</strong><span>Use a darker theme.</span></div><label class="toggle"><input id="darkToggle" type="checkbox"><span class="toggle-track"></span></label></div>
+                <div class="toggle-row"><div class="toggle-copy"><strong>Ticket notifications</strong><span>Show confirmation messages.</span></div><label class="toggle"><input id="notifyToggle" type="checkbox" checked><span class="toggle-track"></span></label></div>
+                <div class="toggle-row"><div class="toggle-copy"><strong>Compact ticket rows</strong><span>Reduce table spacing.</span></div><label class="toggle"><input id="compactToggle" type="checkbox"><span class="toggle-track"></span></label></div>
+                <button class="btn btn-primary settings-save" id="savePreferences">Save preferences</button>
+              </div>
+
+              <div id="settings-account" class="settings-section hidden">
+                <h2>Account & session</h2><p>Manage your current demo session.</p>
+                <div class="toggle-row"><div class="toggle-copy"><strong>Signed in as</strong><span id="accountEmail"></span></div><span class="status status-resolved">Active</span></div>
+                <div class="toggle-row"><div class="toggle-copy"><strong>Demo environment</strong><span>Data is stored in this browser only.</span></div></div>
+                <button class="btn btn-danger settings-save" id="settingsLogout">Sign out of DevTrack ↗</button>
+              </div>
             </div>
           </div>
-          <div id="statusOverview" class="overview"></div>
-        </div>
-      </section>
-
-      <!-- TICKET MANAGEMENT -->
-      <section id="ticketsPage" class="page hidden">
-        <div class="page-intro">
-          <div>
-            <h2>Ticket Management</h2>
-            <p class="muted">Create, track, update and resolve issues.</p>
-          </div>
-          <button id="ticketAddButton" class="primary">+ Create Ticket</button>
-        </div>
-
-        <div class="content-card">
-          <div class="toolbar">
-            <input id="search" type="search"
-              placeholder="Search title, category or ID...">
-            <select id="statusFilter" aria-label="Filter by status">
-              <option value="All">All statuses</option>
-              <option>Open</option>
-              <option>In Progress</option>
-              <option>Resolved</option>
-            </select>
-            <select id="priorityFilter" aria-label="Filter by priority">
-              <option value="All">All priorities</option>
-              <option>Low</option>
-              <option>Medium</option>
-              <option>High</option>
-              <option>Urgent</option>
-            </select>
-          </div>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>TICKET</th>
-                  <th>CATEGORY</th>
-                  <th>PRIORITY</th>
-                  <th>STATUS</th>
-                  <th>CREATED</th>
-                  <th>ACTIONS</th>
-                </tr>
-              </thead>
-              <tbody id="ticketList"></tbody>
-            </table>
-          </div>
-          <p id="ticketCount" class="muted small"></p>
-        </div>
-      </section>
-
-      <!-- SETTINGS -->
-      <section id="settingsPage" class="page hidden">
-        <div class="page-intro">
-          <div>
-            <h2>Settings</h2>
-            <p class="muted">Manage your profile and application preferences.</p>
-          </div>
-        </div>
-
-        <form id="settingsForm" class="content-card settings-card">
-          <h2>Profile Information</h2>
-          <p class="muted">Personalize your workspace profile.</p>
-
-          <label for="profileName">Display name</label>
-          <input id="profileName" maxlength="60" required>
-
-          <label for="profileEmail">Email address</label>
-          <input id="profileEmail" type="email" required>
-
-          <div class="settings-divider"></div>
-          <h2>Preferences</h2>
-
-          <label class="setting-row" for="darkMode">
-            <span>
-              <strong>Dark mode</strong>
-              <small>Use a darker application appearance.</small>
-            </span>
-            <input id="darkMode" type="checkbox">
-          </label>
-
-          <label class="setting-row" for="notifications">
-            <span>
-              <strong>Notifications</strong>
-              <small>Enable demo notification feedback.</small>
-            </span>
-            <input id="notifications" type="checkbox">
-          </label>
-
-          <button class="primary" type="submit">Save Settings</button>
-          <p id="settingsMessage" class="success-message" role="status"></p>
-        </form>
-
-        <div class="content-card about-card">
-          <h2>About DevTrack</h2>
-          <p class="muted">Helpdesk & Issue Tracker · Version 2.0</p>
-          <p>Built with HTML, CSS, JavaScript and browser storage.</p>
-          <p class="muted small">This demo does not use a server or shared database.</p>
-        </div>
-      </section>
-
-      <footer>DevTrack · Helpdesk & Issue Tracker · 2026</footer>
+        </section>
+      </div>
     </main>
   </div>
 
-  <!-- CREATE / EDIT TICKET DIALOG -->
-  <dialog id="ticketDialog">
-    <form id="ticketForm" class="ticket-form">
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow">TICKET MANAGEMENT</p>
-          <h2 id="formTitle">Create Ticket</h2>
-        </div>
-        <button type="button" id="closeButton" class="icon-button"
-          aria-label="Close dialog">×</button>
+  <!-- SHARED CREATE / EDIT FORM -->
+  <div id="ticketModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal">
+      <div class="modal-head">
+        <div><h2 id="modalTitle">Create ticket</h2><div class="small muted">Provide the support request details.</div></div>
+        <button class="icon-btn" id="closeModal" aria-label="Close">×</button>
       </div>
-
-      <input type="hidden" id="ticketId">
-
-      <label for="title">Ticket title</label>
-      <input id="title" maxlength="100" required
-        placeholder="e.g. Login page error">
-
-      <label for="description">Description</label>
-      <textarea id="description" maxlength="2000" required
-        placeholder="Describe the issue..."></textarea>
-
-      <div class="form-grid">
-        <div>
-          <label for="category">Category</label>
-          <select id="category">
-            <option>Technical</option>
-            <option>Software</option>
-            <option>Hardware</option>
-            <option>Network</option>
-            <option>General</option>
-          </select>
+      <form id="ticketForm">
+        <div class="modal-body">
+          <input id="ticketEditId" type="hidden">
+          <div class="field"><label for="ticketTitle">Ticket title *</label><input id="ticketTitle" required maxlength="140"></div>
+          <div class="field"><label for="ticketDescription">Description</label><textarea id="ticketDescription" maxlength="2000"></textarea></div>
+          <div class="settings-form-grid">
+            <div class="field"><label for="ticketRequester">Requester *</label><input id="ticketRequester" required maxlength="100"></div>
+            <div class="field"><label for="ticketEmail">Requester email</label><input id="ticketEmail" type="email"></div>
+            <div class="field"><label for="ticketCategory">Category</label><select id="ticketCategory"><option>Technical</option><option>Billing</option><option>Account</option><option>Feature Request</option><option>Other</option></select></div>
+            <div class="field"><label for="ticketPriority">Priority</label><select id="ticketPriority"><option>Low</option><option selected>Medium</option><option>High</option></select></div>
+            <div class="field"><label for="ticketStatus">Status</label><select id="ticketStatus"><option>Open</option><option>In Progress</option><option>Resolved</option><option>Closed</option></select></div>
+            <div class="field"><label for="ticketAssignee">Assignee</label><input id="ticketAssignee" maxlength="100"></div>
+          </div>
         </div>
-        <div>
-          <label for="priority">Priority</label>
-          <select id="priority">
-            <option>Low</option>
-            <option selected>Medium</option>
-            <option>High</option>
-            <option>Urgent</option>
-          </select>
+        <div class="modal-foot">
+          <button type="button" class="btn" id="cancelModal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="saveTicketButton">Create ticket</button>
         </div>
-      </div>
+      </form>
+    </div>
+  </div>
 
-      <label for="status">Status</label>
-      <select id="status">
-        <option>Open</option>
-        <option>In Progress</option>
-        <option>Resolved</option>
-      </select>
+  <!-- DELETE CONFIRMATION -->
+  <div id="confirmModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="modal confirm-modal">
+      <div class="modal-head"><h2 id="confirmTitle">Delete ticket?</h2><button class="icon-btn" id="closeConfirm">×</button></div>
+      <div class="modal-body"><p class="confirm-copy" id="confirmCopy">This action cannot be undone.</p></div>
+      <div class="modal-foot"><button class="btn" id="cancelConfirm">Cancel</button><button class="btn btn-danger" id="confirmDelete">Delete ticket</button></div>
+    </div>
+  </div>
 
-      <div class="form-actions">
-        <button type="button" id="cancelButton" class="secondary">
-          Cancel
-        </button>
-        <button type="submit" class="primary">Save Ticket</button>
-      </div>
-    </form>
-  </dialog>
-
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="script.js"></script>
+  <div id="toastArea" class="toast-area" aria-live="polite"></div>
 </body>
 </html>
